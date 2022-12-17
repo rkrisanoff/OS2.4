@@ -86,20 +86,20 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
     {
 
         struct vm_area_struct_info *vasi = vmalloc(sizeof(struct vm_area_struct_info));
-        copy_to_user(vasi, (struct vm_area_struct_info *)ioctl_param, sizeof(struct vm_area_struct_info));
+        copy_from_user(vasi, (struct vm_area_struct_info *)ioctl_param, sizeof(struct vm_area_struct_info));
         struct task_struct *task;
 
         task = get_pid_task(find_get_pid(vasi->pid), PIDTYPE_PID);
         if (task == NULL)
         {
             pr_err("labmod: process not found\n");
-            return 0;
+            return 3;
         }
 
-        if (task->mm == 0)
+        if (task->mm == NULL)
         {
             printk(KERN_INFO "Can't find vm_area_struct with this pid\n");
-            return;
+            return 39;
         }
         struct mm_struct *mm;
         struct vm_area_struct *vm_area;
