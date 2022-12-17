@@ -5,6 +5,11 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+#define VM_READ 0x00000001
+#define VM_WRITE 0x00000002
+#define VM_EXEC 0x00000004
+
+
 int main(int argc, char **argv)
 {
     int fd;
@@ -33,45 +38,62 @@ int main(int argc, char **argv)
     {
         printf("Can't open device file: %s\n", DEVICE_NAME);
         exit(2);
+    };
+
+    struct pci_dev_info *pdi = malloc(sizeof(struct pci_dev_info));
+    struct vm_area_struct_info *vasi = malloc(sizeof(struct vm_area_struct_info));
+
+    vasi->pid = pid;
+
+    int ret_val = ioctl(fd, IOCTL_GET_PCI_DEV, pdi);
+    if (ret_val != 0)
+    {
+        printf("IOCTL_GET_PCI_DEV failed %d", ret_val);
+        exit(ret_val);
     }
-    int ret_val = ioctl(fd, IOCTL_GET_PCI_DEV, NULL);
+    printf("<-- PCI DEV -->");
+    if (pdi->find_device)
+    {
+        printf("pci found [%d]\n", pdi->device);
+    }
 
+    ret_val = ioctl(fd, IOCTL_GET_VM_AREA_STRUCT, vasi);
+    printf("<-- VM AREA STRUCT -->\n");
+    if (ret_val != 0)
+    {
+        printf("IOCTL_GET_VM_AREA_STRUCT failed %d", ret_val);
+        exit(ret_val);
+    }
 
-    // struct lab_syscall_info_data *lsysid = malloc(sizeof(struct lab_syscall_info_data));
-
-    // lsysid->pid = pid;
-
-    // int ret_val = ioctl(fd, IOCTL_GET_SIGNAL_INFO, lsysid);
-    // if (ret_val != 0)
-    // {
-    //     printf("IOCTL_GET_SYSCALL_INFO failed %d: process with <PID> = %d doesn't exist\n", ret_val, lsysid->pid);
-    //     exit(ret_val);
-    // }
-
-    // printf("<-- SYSCALL INFO -->\n");
-    // printf("FOR SYSCALL INFO WITH PID = %d\n", lsysid->pid);
-    // printf("STACK POINTER = %llu\n", lsysid->result.sp);
-    // printf("NR = %d\n", lsysid->result.data.nr);
-    // printf("INSTRUCTION POINTER = %llu\n", lsysid->result.data.instruction_pointer);
-
-    // struct lab_signal_struct_data *lsigsd = malloc(sizeof(struct lab_signal_struct_data));
-
-    // lsigsd->pid = pid;
-
-    // ret_val = ioctl(fd, IOCTL_GET_SIGNAL_INFO, lsigsd);
-    // if (ret_val != 0)
-    // {
-    //     printf("IOCTL_GET_SYSCALL_INFO failed %d: process with <PID> = %d doesn't exist\n", ret_val, lsigsd->pid);
-    //     exit(ret_val);
-    // }
-
-    // printf("<-- SIGNAL STRUCT -->\n");
-    // printf("FOR SIGNAL_STRUCT WITH PID = %d\n", lsigsd->pid);
-    // printf("FLASG = %x\n", lsigsd->result.flags);
-    // printf("GROUP EXIT CODE = %d\n", lsigsd->result.group_exit_code);
-    // printf("LEADER = %d\n", lsigsd->result.leader);
-    // printf("NOTIFY COUNT = %d\n", lsigsd->result.notify_count);
-    // printf("NR THREAD = %d\n", lsigsd->result.nr_threads);
-
+    for (int i = 0; i < vasi->actual_count; i++)
+    {
+        printf("0x%hx-0x%hx\t", vasi->vapi[i].vm_start, vasi->vapi[i].vm_end);
+        if (vasi->vapi[i].permissions & VM_READ)
+        {
+            printf("r");
+        }
+        else
+        {
+            printf("-");
+        }
+        if (vasi->vapi[i].permissions & VM_WRITE)
+        {
+            printf("w");
+        }
+        else
+        {
+            printf("-");
+        }
+        if (vasi->vapi[i].permissions & VM_EXEC)
+        {
+            printf("x");
+        }
+        else
+        {
+            printf("-");
+        }
+        printf("\t%1d", vasi->vapi[i].rb_subtree_gap);
+        printf("\n");
+    }
     return 0;
 }

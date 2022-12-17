@@ -6,29 +6,12 @@
 #include <linux/fs.h>
 
 #include "character_dev.h"
-#include <linux/if_tun.h>
-#include <linux/if_macvlan.h>
-#include <linux/signal.h>
-#include <linux/pagemap.h>
-#include <linux/page-flags.h>
-#include <linux/mm_types.h>
-#include "linux/mm.h"
-#include <asm/pgtable.h>
-#include <asm/page.h>
 
 #include <asm/uaccess.h>
-#include <linux/netdevice.h>
 #include <linux/list.h>
-#include <asm/siginfo.h>
-#include <linux/rcupdate.h>
-#include <linux/sched.h>
-#include <linux/ptrace.h>
 #include <linux/syscalls.h>
-#include <linux/uaccess.h>
-#include <linux/pid.h>
-#include <linux/types.h>
-#include <linux/export.h>
-#include <asm/syscall.h>
+#include <linux/pci.h>
+#include <linux/vmalloc.h>
 
 MODULE_LICENSE("GPL");
 MODULE_VERSION("2.0.22");
@@ -84,115 +67,69 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
 #endif
 {
     printk(KERN_INFO "lab_dev_ioctl(%p,%lu,%lu)", file, ioctl_num, ioctl_param);
-    struct task_struct *t = NULL;
-    switch (ioctl_num)
+    if (ioctl_num == IOCTL_GET_PCI_DEV)
     {
 
-    case IOCTL_GET_PCI_DEV:
-        // ndi = vmalloc(sizeof(struct n_dev_info));
-        struct net_device *n_dev;
-        read_lock(&dev_base_lock);
-        n_dev = first_net_device(&init_net);
-        if (!n_dev)
-            return 0;
-        // if (!n_dev)
-        // {
-        //     strcat(output, "No network devices ;(((");
-        // }
-        int count = 0;
-        char buff_int[10];
-        while (n_dev)
+        struct pci_dev_info *pdi = vmalloc(sizeof(struct pci_dev_info));
+        pdi->find_device = 0;
+        struct pci_dev *dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, NULL);
+        if (dev != NULL)
         {
-            // sprintf(buff_int, "%d", c);
-            // strcat(output, "Number of net device: ");
-            // strcat(output, buff_int);
-            // strcat(output, "\n");
-            // sprintf(buff_int, "%s", n_dev->name);
-            // strcat(output, buff_int);
-            // strcat(output, "\n");
-            // strcat(output, "State: ");
-            // sprintf(buff_int, "%d", n_dev->state);
-            // strcat(output, buff_int);
-            printk(KERN_INFO "%s",n_dev->name);
-            n_dev = next_net_device(n_dev);
-            int count = 0;
+            pdi->device = dev->device;
+            pdi->find_device = 1;
+        };
+        copy_to_user((struct pci_dev_info *)ioctl_param, pdi, sizeof(struct pci_dev_info));
+        vfree(pdi);
+    }
+    if (ioctl_num == IOCTL_GET_VM_AREA_STRUCT)
+    {
+        struct task_struct *task;
+        struct mm_struct *mm;
+        struct vm_area_struct *vm_area;
 
-            // c++;
-            // strcat(output, "\n\n");
+        task = get_pid_task(find_get_pid(1), PIDTYPE_PID);
+        if (task == NULL)
+        {
+            pr_err("labmod: process not found\n");
+            return 0;
         }
-        // strcat(output, "Total number of ");
-        // sprintf(buff_int, "%d", c);
-        // strcat(output, buff_int);
-        read_unlock(&dev_base_lock);
-
-        // ndi->size = c;
-
-        // msg = vmalloc(sizeof(struct message));
-        // msg->si = *si;
-        // msg->ndi = *ndi;
-        break;
-
-        // case IOCTL_GET_SYSCALL_INFO:
-
-        //     struct lab_syscall_info_data *lsysid = vmalloc(sizeof(struct lab_syscall_info_data));
-        //     copy_from_user(lsysid, (struct lab_syscall_info_data *)ioctl_param, sizeof(struct lab_syscall_info_data));
-        //     t = get_pid_task(find_get_pid(lsysid->pid), PIDTYPE_PID);
-        //     if (t == NULL)
-        //     {
-        //         printk(KERN_ERR "task_struct with pid=%d does not exist\n", lsysid->pid);
-        //         vfree(lsysid);
-        //         return 1;
-        //     };
-        //     struct syscall_info *info=  vmalloc(sizeof(struct syscall_info));
-        //     struct pt_regs *regs;
-        //     regs = task_pt_regs(lsysid->pid);
-        //     info->sp = user_stack_pointer(regs);
-        //     info->data.instruction_pointer = instruction_pointer(regs);
-
-        //     info->data.nr = syscall_get_nr(lsysid->pid, regs);
-
-        //     lsysid->result.sp = info->sp;
-        //     lsysid->result.data.instruction_pointer =  info->data.instruction_pointer;
-        //     lsysid->result.data.nr =  info->data.nr;
-
-        //     copy_to_user((struct lab_syscall_info_data *)ioctl_param, lsysid, sizeof(struct lab_syscall_info_data));
-        //     vfree(info);
-        //     vfree(lsysid);
-        //     break;
-        // case IOCTL_GET_SIGNAL_INFO:
-
-        //     struct lab_signal_struct_data *lsigsd = vmalloc(sizeof(struct lab_signal_struct_data));
-        //     copy_from_user(lsigsd, (struct lab_signal_struct_data *)ioctl_param, sizeof(struct lab_signal_struct_data));
-        //     t = get_pid_task(find_get_pid(lsigsd->pid), PIDTYPE_PID);
-        //     if (t == NULL)
-        //     {
-        //         printk(KERN_ERR "task_struct with pid=%d does not exist\n", lsigsd->pid);
-        //         vfree(lsigsd);
-        //         return 2;
-        //     };
-        //     lsigsd->result.flags = t->signal->flags;
-        //     lsigsd->result.group_exit_code = t->signal->group_exit_code;
-        //     lsigsd->result.leader = t->signal->leader;
-        //     lsigsd->result.notify_count = t->signal->notify_count;
-
-        //     lsigsd->result.nr_threads = t->signal->nr_threads;
-        //     copy_to_user((struct lab_signal_struct_data *)ioctl_param, lsigsd, sizeof(struct lab_signal_struct_data));
-        //     vfree(lsigsd);
-        //     break;
+        struct vm_area_struct_info *vasi = vmalloc(sizeof(struct vm_area_struct_info));
+        if (task->mm == 0)
+        {
+            printk(KERN_INFO "Can't find vm_area_struct with this pid\n");
+            return;
+        }
+        printk(KERN_INFO "vm area struct\n");
+        struct vm_area_struct *pos = NULL;
+        int i = 0;
+        for (pos = task->mm->mmap, i = 0; pos; pos = pos->vm_next, i++)
+        {
+            if (i > 29)
+            {
+                break;
+            };
+            vasi->actual_count = i;
+            vasi->vapi[i].permissions = pos->vm_flags;
+            vasi->vapi[i].vm_start = pos->vm_start;
+            vasi->vapi[i].vm_end = pos->vm_end;
+            vasi->vapi[i].rb_subtree_gap = pos->rb_subtree_gap;
+        }
+        copy_to_user((struct vm_area_struct_info *)ioctl_param, vasi, sizeof(struct vm_area_struct_info));
     }
     return 0;
 }
 
-struct file_operations file_ops = {
-    .owner = THIS_MODULE,
-    .read = lab_dev_read,
-    .write = lab_dev_write,
-    .open = lab_dev_open,
-    .release = lab_dev_release,
+struct file_operations file_ops =
+    {
+        .owner = THIS_MODULE,
+        .read = lab_dev_read,
+        .write = lab_dev_write,
+        .open = lab_dev_open,
+        .release = lab_dev_release,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35))
-    .ioctl = device_ioctl
+        .ioctl = device_ioctl
 #else
-    .unlocked_ioctl = lab_dev_ioctl
+        .unlocked_ioctl = lab_dev_ioctl
 #endif
 };
 

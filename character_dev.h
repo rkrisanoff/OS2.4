@@ -6,41 +6,28 @@
 
 #define MAJOR_NUM 100
 
-#define IOCTL_GET_SIGNAL_INFO _IOR(MAJOR_NUM, 0, char *)
-#define IOCTL_GET_SYSCALL_INFO _IOR(MAJOR_NUM, 1, char *)
-#define IOCTL_GET_PCI_DEV _IOR(MAJOR_NUM, 2, char *)
+#define IOCTL_GET_PCI_DEV _IOR(MAJOR_NUM, 0, char *)
+#define IOCTL_GET_VM_AREA_STRUCT _IOR(MAJOR_NUM, 1, char *)
 
-
-struct lab_seccomp_data
+struct pci_dev_info
 {
-    int nr;
-    unsigned long long instruction_pointer;
-    unsigned long long args[6];
+    int find_device;
+    unsigned short device;
 };
 
-struct lab_syscall_info
+struct vm_area_pos_info
 {
-    unsigned long long sp;
-    struct lab_seccomp_data data;
+    unsigned long vm_start;
+    unsigned long vm_end;
+    unsigned long permissions;
+    unsigned long rb_subtree_gap;
 };
-struct lab_syscall_info_data
+struct vm_area_struct_info
 {
     int pid;
-    struct lab_syscall_info result;
-};
-
-struct lab_signal_struct
-{
-    int nr_threads;
-    int group_exit_code;
-    int notify_count;
-    unsigned int flags;
-    int leader;
-};
-struct lab_signal_struct_data
-{
-    int pid;
-    struct lab_signal_struct result;
+    int actual_count;
+    struct vm_area_pos_info vapi[30];
 };
 #define DEVICE_NAME "lab_character_device"
+
 #endif
