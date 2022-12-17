@@ -73,7 +73,7 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
         struct pci_dev_info *pdi = vmalloc(sizeof(struct pci_dev_info));
         int i = 0;
         struct pci_dev *dev = NULL; ;
-        while (dev= pci_get_device(PCI_ANY_ID, PCI_ANY_ID, NULL))
+        while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) && (i<MAX_COUNT_PCI_DEV))
         {
             pdi->devices[i] = dev->device;
             i++;
@@ -115,6 +115,7 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
         }
         vasi->actual_count = i - 1;
         copy_to_user((struct vm_area_struct_info *)ioctl_param, vasi, sizeof(struct vm_area_struct_info));
+        vfree(vasi);
     }
     return 0;
 }
