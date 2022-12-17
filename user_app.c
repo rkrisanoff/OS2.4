@@ -51,11 +51,10 @@ int main(int argc, char **argv)
         exit(ret_val);
     }
     printf("<-- PCI DEV -->\n");
-    // if (pdi->find_device)
-    // {
-    //     printf("pci found [%d]\n", pdi->device);
-    // }
-
+    for (int i = 0; i < pdi->actual_count; i++)
+    {
+        printf("pci found [%d]\n", pdi->devices[i]);
+    }
     ret_val = ioctl(fd, IOCTL_GET_VM_AREA_STRUCT, vasi);
     printf("<-- VM AREA STRUCT -->\n");
     if (ret_val != 0)

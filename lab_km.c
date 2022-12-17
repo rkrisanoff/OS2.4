@@ -71,49 +71,49 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
     {
 
         struct pci_dev_info *pdi = vmalloc(sizeof(struct pci_dev_info));
-        pdi->find_device = 0;
-        struct pci_dev *dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, NULL);
-        if (dev != NULL)
+        int i = 0;
+        struct pci_dev *dev = NULL; ;
+        while (dev= pci_get_device(PCI_ANY_ID, PCI_ANY_ID, NULL))
         {
-            pdi->device = dev->device;
-            pdi->find_device = 1;
+            pdi->devices[i] = dev->device;
+            i++;
         };
+        pdi->actual_count = i - 1;
         copy_to_user((struct pci_dev_info *)ioctl_param, pdi, sizeof(struct pci_dev_info));
         vfree(pdi);
     }
     if (ioctl_num == IOCTL_GET_VM_AREA_STRUCT)
     {
-        struct task_struct *task;
-        struct mm_struct *mm;
-        struct vm_area_struct *vm_area;
 
-        task = get_pid_task(find_get_pid(1), PIDTYPE_PID);
+        struct vm_area_struct_info *vasi = vmalloc(sizeof(struct vm_area_struct_info));
+        copy_to_user(vasi, (struct vm_area_struct_info *)ioctl_param, sizeof(struct vm_area_struct_info));
+        struct task_struct *task;
+
+        task = get_pid_task(find_get_pid(vasi->pid), PIDTYPE_PID);
         if (task == NULL)
         {
             pr_err("labmod: process not found\n");
             return 0;
         }
-        struct vm_area_struct_info *vasi = vmalloc(sizeof(struct vm_area_struct_info));
+
         if (task->mm == 0)
         {
             printk(KERN_INFO "Can't find vm_area_struct with this pid\n");
             return;
         }
+        struct mm_struct *mm;
+        struct vm_area_struct *vm_area;
         printk(KERN_INFO "vm area struct\n");
         struct vm_area_struct *pos = NULL;
         int i = 0;
-        for (pos = task->mm->mmap, i = 0; pos; pos = pos->vm_next, i++)
+        for (pos = task->mm->mmap, i = 0; pos != NULL && i<MAX_COUNT_VM_AREA_STRUCTES; pos = pos->vm_next, i++)
         {
-            if (i > 29)
-            {
-                break;
-            };
-            vasi->actual_count = i;
             vasi->vapi[i].permissions = pos->vm_flags;
             vasi->vapi[i].vm_start = pos->vm_start;
             vasi->vapi[i].vm_end = pos->vm_end;
             vasi->vapi[i].rb_subtree_gap = pos->rb_subtree_gap;
         }
+        vasi->actual_count = i - 1;
         copy_to_user((struct vm_area_struct_info *)ioctl_param, vasi, sizeof(struct vm_area_struct_info));
     }
     return 0;
