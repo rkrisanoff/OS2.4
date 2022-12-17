@@ -92,14 +92,14 @@ static long lab_dev_ioctl(struct file *file, unsigned int ioctl_num, unsigned lo
         task = get_pid_task(find_get_pid(vasi->pid), PIDTYPE_PID);
         if (task == NULL)
         {
-            pr_err("labmod: process not found\n");
-            return 3;
+            pr_err("Process with <PID> = %d doesn't exist\n",vasi->pid);
+            return 1;
         }
 
         if (task->mm == NULL)
         {
             printk(KERN_INFO "Can't find vm_area_struct with this pid\n");
-            return 39;
+            return 2;
         }
         struct mm_struct *mm;
         struct vm_area_struct *vm_area;

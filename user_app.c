@@ -60,6 +60,15 @@ int main(int argc, char **argv)
     if (ret_val != 0)
     {
         printf("IOCTL_GET_VM_AREA_STRUCT failed %d", ret_val);
+        if (ret_val == 1)
+        {
+            printf("Process with <PID> = %d doesn't exist\n", vasi->pid);
+        }
+        if (ret_val == 2)
+        {
+            printf("Can't find vm_area_struct for Process with <PID> = %d\n",vasi->pid);
+        }
+
         exit(ret_val);
     }
 
