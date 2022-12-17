@@ -9,7 +9,6 @@
 #define VM_WRITE 0x00000002
 #define VM_EXEC 0x00000004
 
-
 int main(int argc, char **argv)
 {
     int fd;
@@ -51,11 +50,11 @@ int main(int argc, char **argv)
         printf("IOCTL_GET_PCI_DEV failed %d", ret_val);
         exit(ret_val);
     }
-    printf("<-- PCI DEV -->");
-    if (pdi->find_device)
-    {
-        printf("pci found [%d]\n", pdi->device);
-    }
+    printf("<-- PCI DEV -->\n");
+    // if (pdi->find_device)
+    // {
+    //     printf("pci found [%d]\n", pdi->device);
+    // }
 
     ret_val = ioctl(fd, IOCTL_GET_VM_AREA_STRUCT, vasi);
     printf("<-- VM AREA STRUCT -->\n");
@@ -67,31 +66,11 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < vasi->actual_count; i++)
     {
-        printf("0x%hx-0x%hx\t", vasi->vapi[i].vm_start, vasi->vapi[i].vm_end);
-        if (vasi->vapi[i].permissions & VM_READ)
-        {
-            printf("r");
-        }
-        else
-        {
-            printf("-");
-        }
-        if (vasi->vapi[i].permissions & VM_WRITE)
-        {
-            printf("w");
-        }
-        else
-        {
-            printf("-");
-        }
-        if (vasi->vapi[i].permissions & VM_EXEC)
-        {
-            printf("x");
-        }
-        else
-        {
-            printf("-");
-        }
+        printf("0x%0.8hx-0x%0.8hx\t", vasi->vapi[i].vm_start, vasi->vapi[i].vm_end);
+        printf("%c%c%c",
+               (vasi->vapi[i].permissions & VM_READ) ? 'r' : '-',
+               (vasi->vapi[i].permissions & VM_WRITE) ? 'w' : '-',
+               (vasi->vapi[i].permissions & VM_EXEC) ? 'x' : '-');
         printf("\t%1d", vasi->vapi[i].rb_subtree_gap);
         printf("\n");
     }
